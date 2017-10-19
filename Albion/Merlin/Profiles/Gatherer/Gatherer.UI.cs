@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
+
 using UnityEngine;
-using UnityEngine.UI;
-using static UnityEngine.GUILayout;
 
 namespace Merlin.Profiles.Gatherer
 {
@@ -12,100 +9,44 @@ namespace Merlin.Profiles.Gatherer
     {
         #region Fields
 
-        static int SpaceBetweenSides = 40;
-        static int SpaceBetweenItems = 4;
+        private static int SpaceBetweenSides = 40;
+        private static int SpaceBetweenItems = 4;
 
-        bool _isUIshown;
-        bool _isUIcraftshown;
-        bool _showESP;
-
-        public Dropdown craftList;
-
-        Tuple<Vector2, int, int> shopcategoryScrollView = new Tuple<Vector2, int, int>(Vector2.zero, 0, 0);
-        Tuple<Vector2, int, int> shopsubcategory1ScrollView = new Tuple<Vector2, int, int>(Vector2.zero, 0, 0);
-        Tuple<Vector2, int, int> tierScrollView = new Tuple<Vector2, int, int>(Vector2.zero, 0, 0);
-        Tuple<Vector2, int, int> maxqualitylevelScrollView = new Tuple<Vector2, int, int>(Vector2.zero, 0, 0);
-
-        List<Tuple<string, string>> filterList;
-
-        string[] shopsubcategory1 = new string[] { "Values" };
-
-        //string[] tier = new string[] { "Values" };
-
-        string[] maxqualitylevel = new string[] { "Values" };
-
-        // string[] enchantmentlevel;
-
-
-        //   GameGui
-
+        private bool _isUIshown;
+        private bool _showESP;
 
         #endregion Fields
 
         #region Properties
 
-        // int [] enchantmentlevel { get { return Enum.GetValues(typeof(EnchantmentLevel)).ToArray(); } }
+        private static Rect GatheringUiButtonRect { get; } = new Rect((Screen.width / 2) - 50, 0, 100, 20);
 
-        int[] enchantmentlevel = new int[] { 0, 1, 2, 3 };
-        string[] qualitylevel = new string[] { "Normal", "Good", "G2", "G3", "G4", "G5" };
+        private static Rect GatheringBotButtonRect { get; } = new Rect((Screen.width / 2) + 50, 0, 100, 20);
 
-        //static string[] tier { get { return Enum.GetNames(typeof(Tier)).Select(n => n.Insert(0, "Tier ")).ToArray(); } }
-        string[] tier = { "All", "Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5", "Tier 6", "Tier 7", "Tier 8" };
-       // int tierLength = tier.Length + 1;
-       
+        private Rect GatheringWindowRect { get; set; } = new Rect((Screen.width / 2) - 506, 0, 0, 0);
 
-        // foreach (var tier in Enum.GetValues(typeof(Tier)).Cast<Tier>())
-        static Rect UnloadButtonRect { get; } = new Rect((Screen.width / 2) - 300, 0, 100, 20);
-        static Rect GatheringUiButtonRect { get; } = new Rect((Screen.width / 2) - 200, 0, 100, 20);
-        static Rect GatheringBotButtonRect { get; } = new Rect((Screen.width / 2) - 100, 0, 100, 20);
-        static Rect CraftingUIButtonRect { get; } = new Rect((Screen.width / 2), 0, 100, 20);
-        static Rect CraftingBotButtonRect { get; } = new Rect((Screen.width / 2) + 100, 0, 100, 20);
+        private string[] TownClusterNames
+        { get { return Enum.GetNames(typeof(TownClusterName)).Select(n => n.Replace("_", " ")).ToArray(); } }
 
-        static Vector2 craftListScrollPosition = Vector2.zero;
-        int craftSelectionGridInt = 0;
-        string craftCountString = "-1";
+        private string[] TierNames
+        { get { return Enum.GetNames(typeof(Tier)).ToArray(); } }
 
-         static List<Recipe> availableRecipes = getCurrentRecipes();
-        static string[] recipeList = availableRecipes.Select(R => R.RecipeName).ToArray();
-        int craftAmount = -1;
+        private Tier SelectedMinimumTier
+        { get { return (Tier)Enum.Parse(typeof(Tier), TierNames[_selectedMininumTierIndex]); } }
 
-        //toCraftList = new List<Tuple<string, int>>();
-
-        
-
-        static Rect InventoryToolReaderButtonRect { get; } = new Rect((Screen.width / 2) + 200, 0, 100, 20);
-
-        Rect CraftingWindowRect { get; set; } = new Rect((Screen.width / 2) - 506, 0, 0, 0);
-
-        Rect GatheringWindowRect { get; set; } = new Rect((Screen.width / 2) - 506, 0, 0, 0);
-
-        string[] TownClusterNames { get { return Enum.GetNames(typeof(TownClusterName)).Select(n => n.Replace("_", " ")).ToArray(); } }
-
-        string[] TierNames { get { return Enum.GetNames(typeof(Tier)).ToArray(); } }
-
-        Tier SelectedMinimumTier { get { return (Tier)Enum.Parse(typeof(Tier), TierNames[_selectedMininumTierIndex]); } }
-        
         #endregion Properties
 
         #region Methods
 
-        void DrawGatheringUIButton()
+        private void DrawGatheringUIButton()
         {
             if (GUI.Button(GatheringUiButtonRect, "Gathering UI"))
                 _isUIshown = true;
 
             DrawRunButton(false);
-
         }
-        void DrawCraftingUIButton()
-        {
-            if (GUI.Button(CraftingUIButtonRect, "Crafting UI"))
-                _isUIcraftshown = true;
 
-
-            DrawCraftingBotButton(false);
-        }
-        void DrawGatheringUIWindow(int windowID)
+        private void DrawGatheringUIWindow(int windowID)
         {
             GUILayout.BeginHorizontal();
             DrawGatheringUILeft();
@@ -116,268 +57,7 @@ namespace Merlin.Profiles.Gatherer
             GUI.DragWindow();
         }
 
-        void DrawUnloadButton()
-        {
-            if(GUI.Button(UnloadButtonRect, "Unload"))
-            {
-                Core.Unload();
-            }
-
-        }
-
-
-
-        void DrawNameReaderUIButton()
-        {
-            if (_state.State == State.ReadToolNames)
-            {
-
-                if (GUI.Button(InventoryToolReaderButtonRect, "Stop Reader"))
-                {
-                    _state.Fire(Trigger.GetToolNames);
-                }
-
-            }
-            else
-            {
-                if (GUI.Button(InventoryToolReaderButtonRect, "Start Reader"))
-                {
-
-                    _state.Fire(Trigger.GetToolNames);
-                }
-            }
-
-
-        }
-
-        void DrawDropDown()
-        {
-            List<string> values = new List<string> { "Test", "names" };
-            //Dropdown craftList.AddOptions(values);
-        }
-
-
-
-        void DrawCraftingBotButton(bool layouted)
-        {
-            var text = _isCraftRunning ? "Stop Crafting" : "Start Crafting";
-            if (layouted ? GUILayout.Button(text) : GUI.Button(CraftingBotButtonRect, text))
-            {
-                _isCraftRunning = !_isCraftRunning;
-                if (_isCraftRunning)
-                {
-                    //other resets
-                    
-                    
-
-                    ResetCraftingVariables();
-                    Core.Log("Resetting Crafting Variables");
-                    //
-                    ResetCriticalVariables();
-                    if (_selectedGatherCluster == "Unknown" && _world.GetCurrentCluster() != null)
-                        _selectedGatherCluster = _world.GetCurrentCluster().GetName();
-                    _localPlayerCharacterView.CreateTextEffect("[Start Crafting]");
-                    if (_state.CanFire(Trigger.Failure))
-                        _state.Fire(Trigger.Failure);
-
-                    _state.Fire(Trigger.GetItems);
-
-                }
-                else if (!_isCraftRunning)
-                {
-                    ResetCriticalVariables();
-                    ResetCraftingVariables();
-                    Core.Log("Resetting Crafting Variables");
-
-                    _state.Fire(Trigger.CraftDone);
-                    _localPlayerCharacterView.CreateTextEffect("[Collecting Items]");
-                }
-
-
-            }
-        }
-
-        void DrawCraftingUIWindow(int windowID)
-        {
-            GUILayout.BeginHorizontal();
-            DrawCraftingUILeft();
-            GUILayout.Space(SpaceBetweenSides);
-            DrawCraftingUIRight();
-            GUILayout.EndHorizontal();
-
-            GUI.DragWindow();
-        }
-
-        void DrawCraftingUILeft()
-        {
-            filterList = new List<Tuple<string, string>>();
-            GUILayout.BeginVertical();
-            DrawCraftingUI_Buttons();
-            DrawCraftingBotButton(true);
-            DrawCraftingUI_SelectionGrids();
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-            GUILayout.Label("Categories");
-            shopcategoryScrollView = DrawItemSortingScrollView(shopcategory, shopcategoryScrollView);
-            filterList.Add(new Tuple<string, string>("shopcategory", shopcategory[shopcategoryScrollView.Item2]));
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical();
-            GUILayout.Label("Tier");
-            //compare current gridselection index to  previous 
-            if (shopcategoryScrollView.Item2 != shopcategoryScrollView.Item3)
-            {
-                //Core.Log("Index Changed");
-               // tier = ReadXML("tier", filterList);
-
-                // Array.Sort(tier,1,tier.Count()-1);
-                tierScrollView = DrawItemSortingScrollView(tier, tierScrollView);
-            }
-            else
-            {
-                tierScrollView = DrawItemSortingScrollView(tier, tierScrollView);
-            }
-            //filterList.Add(new Tuple<string, string>("tier", tier[tierScrollView.Item2]));
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical();
-            GUILayout.Label("SubCategories");
-            //compare current gridselection index to  previous 
-            if (shopcategoryScrollView.Item2 != shopcategoryScrollView.Item3)
-            {
-               // Core.Log("Index Changed");
-                shopsubcategory1 = ReadXML("shopsubcategory1", filterList);
-                shopsubcategory1ScrollView = DrawItemSortingScrollView(shopsubcategory1, shopsubcategory1ScrollView);
-            }
-            else
-            {
-                shopsubcategory1ScrollView = DrawItemSortingScrollView(shopsubcategory1, shopsubcategory1ScrollView);
-            }
-            filterList.Add(new Tuple<string, string>("shopsubcategory1", shopcategory[shopsubcategory1ScrollView.Item2]));
-            GUILayout.EndVertical();
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndVertical();
-        }
-
-        void DrawCraftingUIRight()
-        {
-
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-        
-            GUILayout.Label("Resources to craft:");
-            
-          
-            DrawCraftingUI_CraftingScrollView();
-      
-
-            GUILayout.EndVertical();
-            GUILayout.BeginVertical();
-            craftAmount = DrawCraftingUi_CraftTextFields();
-            DrawAddToCraft(craftSelectionGridInt, craftAmount);
-           toCraftList = DrawCurrentList(toCraftList);
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-
-
-           
-        }
-
-        List<Tuple<string, int>> DrawCurrentList(List<Tuple<string, int>> list)
-        {
-            GUILayout.Label("Recipe Name" + "   " + "Amount To Craft");
-            for (int i = 0; i< list.Count; i++)
-            {
-                GUILayout.BeginHorizontal();
-
-                GUILayout.Label(list[i].Item1 + "   " +list[i].Item2.ToString());
-                if (GUILayout.Button("X")) {
-                    list.Remove(list[i]);
-                }
-
-                GUILayout.EndHorizontal();
-            }
-
-            return list;
-        }
-
-        Tuple<Vector2, int,int> DrawItemSortingScrollView(string [] SA, Tuple<Vector2, int,int> T )
-        {
-            int previousGridSelection = T.Item2;
-            Vector2 ScrollPosition = T.Item1;
-            ScrollPosition = GUILayout.BeginScrollView(ScrollPosition, false, true, GUILayout.ExpandWidth(true), GUILayout.MinWidth(100), Width(150),Height(300));
-
-            int SelectionGridInt = T.Item2;
-
-            SelectionGridInt = GUILayout.SelectionGrid(SelectionGridInt, SA, 1);
-
-            EndScrollView();
-            return new Tuple<Vector2, int, int>(ScrollPosition, SelectionGridInt, previousGridSelection);
-        }
-
-
-
-        void DrawCraftingUI_CraftingScrollView()
-        {
-
-
-            //var templist = readXML();
-            //var temparray = templist.ToArray();
-           
-            craftListScrollPosition = GUILayout.BeginScrollView(craftListScrollPosition,false,true,GUILayout.ExpandWidth(true),GUILayout.MinWidth(300));
-            craftSelectionGridInt = GUILayout.SelectionGrid(craftSelectionGridInt, recipeList, 1);
-            //if (xmlstringarray.Length > 0)
-            //{
-            //    craftSelectionGridInt = GUILayout.SelectionGrid(craftSelectionGridInt, xmlstringarray, 1);
-            //}
-            GUILayout.EndScrollView();
-            
- 
-        }
-
-        void DrawAddToCraft(int gridSelection, int amount)
-        {
-            if(GUILayout.Button("Add recipe to craft list"))
-            {
-                string recipeName = recipeList[gridSelection];
-                if (!toCraftList.Any(R => R.Item1 == recipeName))
-                {
-                    toCraftList.Add(new Tuple<string, int>(recipeList[gridSelection], amount));
-                }
-            }
-
-        }
-
-
-        int DrawCraftingUi_CraftTextFields()
-        {
-            GUILayout.Label("Enter amount to craft");
-            craftCountString = GUILayout.TextField(craftCountString, GUILayout.MinWidth(100));
-            int f1 = -1;
-            try
-            {
-                 f1 = Convert.ToInt32(craftCountString);
-                
-            }
-            catch (FormatException e)
-            {
-                Core.Log(e);
-            }
-            catch (OverflowException)
-            {
-
-            }
-            return f1;
-        }
-
-        void DrawCraftingUI_Buttons()
-        {
-            if (GUILayout.Button("Close Crafting UI"))
-                _isUIcraftshown = !_isUIcraftshown;
-        }
-        void DrawGatheringUILeft()
+        private void DrawGatheringUILeft()
         {
             GUILayout.BeginVertical();
             DrawGatheringUI_Buttons();
@@ -388,25 +68,9 @@ namespace Merlin.Profiles.Gatherer
             GUILayout.EndVertical();
         }
 
-
-        void DrawCraftingUI_SelectionGrids()
+        private void DrawGatheringUI_Toggles()
         {
-            GUILayout.Label("Selected city cluster for crafting:");
-            _selectedCraftTownClusterIndex = GUILayout.SelectionGrid(_selectedCraftTownClusterIndex, TownClusterNames, TownClusterNames.Length);
-        }
-
-        void DrawCraftingUI_TextFields()
-        {
-            GUILayout.Label("Selected cluster for gathering:");
-            var currentClusterInfo = _world.GetCurrentCluster() != null ? _world.GetCurrentCluster().GetName() : "Unknown";
-            var selectedCraftGatherCluster = string.IsNullOrEmpty(_selectedCraftCluster) ? currentClusterInfo : _selectedCraftCluster;
-            _selectedCraftCluster = GUILayout.TextField(selectedCraftGatherCluster);
-        }
-
-
-        void DrawGatheringUI_Toggles()
-        {
-            _allowMobHunting = GUILayout.Toggle(_allowMobHunting, "Allow hunting of living mobs (exerimental - can cause issues)");
+            _allowMobHunting = GUILayout.Toggle(_allowMobHunting, "Allow hunting of living mobs (experimental - can cause issues)");
             _skipUnrestrictedPvPZones = GUILayout.Toggle(_skipUnrestrictedPvPZones, "Skip unrestricted PvP zones while gathering");
             _skipKeeperPacks = GUILayout.Toggle(_skipKeeperPacks, "Skip keeper mobs while gathering");
             _allowSiegeCampTreasure = GUILayout.Toggle(_allowSiegeCampTreasure, "Allow usage of siege camp treasures");
@@ -414,7 +78,7 @@ namespace Merlin.Profiles.Gatherer
             UpdateESP(GUILayout.Toggle(_showESP, "Show ESP"));
         }
 
-        void UpdateESP(bool newValue)
+        private void UpdateESP(bool newValue)
         {
             var oldValue = _showESP;
             _showESP = newValue;
@@ -428,7 +92,7 @@ namespace Merlin.Profiles.Gatherer
             }
         }
 
-        void DragGatheringUI_Sliders()
+        private void DragGatheringUI_Sliders()
         {
             if (_skipKeeperPacks)
             {
@@ -449,7 +113,7 @@ namespace Merlin.Profiles.Gatherer
             }
         }
 
-        void DrawGatheringUI_SelectionGrids()
+        private void DrawGatheringUI_SelectionGrids()
         {
             GUILayout.Label("Selected city cluster for banking:");
             _selectedTownClusterIndex = GUILayout.SelectionGrid(_selectedTownClusterIndex, TownClusterNames, TownClusterNames.Length);
@@ -458,7 +122,7 @@ namespace Merlin.Profiles.Gatherer
             _selectedMininumTierIndex = GUILayout.SelectionGrid(_selectedMininumTierIndex, TierNames, TierNames.Length);
         }
 
-        void DrawGatheringUI_TextFields()
+        private void DrawGatheringUI_TextFields()
         {
             GUILayout.Label("Selected cluster for gathering:");
             var currentClusterInfo = _world.GetCurrentCluster() != null ? _world.GetCurrentCluster().GetName() : "Unknown";
@@ -466,7 +130,7 @@ namespace Merlin.Profiles.Gatherer
             _selectedGatherCluster = GUILayout.TextField(selectedGatherCluster);
         }
 
-        void DrawGatheringUIRight()
+        private void DrawGatheringUIRight()
         {
             GUILayout.BeginVertical();
             GUILayout.Label("Resources to gather:");
@@ -474,7 +138,7 @@ namespace Merlin.Profiles.Gatherer
             GUILayout.EndVertical();
         }
 
-        void DrawGatheringUI_Buttons()
+        private void DrawGatheringUI_Buttons()
         {
             if (GUILayout.Button("Close Gathering UI"))
                 _isUIshown = !_isUIshown;
@@ -485,7 +149,7 @@ namespace Merlin.Profiles.Gatherer
                 Core.Unload();
         }
 
-        void DrawGatheringUI_GatheringToggles()
+        private void DrawGatheringUI_GatheringToggles()
         {
             GUILayout.BeginHorizontal();
             var selectedMinimumTier = SelectedMinimumTier;
@@ -509,17 +173,14 @@ namespace Merlin.Profiles.Gatherer
             GUILayout.EndHorizontal();
         }
 
-        void DrawRunButton(bool layouted)
+        private void DrawRunButton(bool layouted)
         {
-            var text = _isGatherRunning ? "Stop Gathering" : "Start Gathering";
+            var text = _isRunning ? "Stop Gathering" : "Start Gathering";
             if (layouted ? GUILayout.Button(text) : GUI.Button(GatheringBotButtonRect, text))
             {
-                _isGatherRunning = !_isGatherRunning;
-                if (_isGatherRunning)
+                _isRunning = !_isRunning;
+                if (_isRunning)
                 {
-                    LoginGui.AutoLogin = true;
-                    _isCraftRunning = false;
-
                     ResetCriticalVariables();
                     if (_selectedGatherCluster == "Unknown" && _world.GetCurrentCluster() != null)
                         _selectedGatherCluster = _world.GetCurrentCluster().GetName();
@@ -527,38 +188,17 @@ namespace Merlin.Profiles.Gatherer
                     if (_state.CanFire(Trigger.Failure))
                         _state.Fire(Trigger.Failure);
                 }
-                else if (!_isGatherRunning)
-                {
-                    LoginGui.AutoLogin = false;
-                }
-
-
             }
         }
 
         protected override void OnUI()
         {
             if (_isUIshown)
-            {
                 GatheringWindowRect = GUILayout.Window(0, GatheringWindowRect, DrawGatheringUIWindow, "Gathering UI");
-                _isUIcraftshown = false;
-            }
-
-
-            else if (_isUIcraftshown)
-            {
-                CraftingWindowRect = GUILayout.Window(1, CraftingWindowRect, DrawCraftingUIWindow, "Crafting UI", MinWidth(1100));
-                _isUIshown = false;
-            }
             else
-            {
                 DrawGatheringUIButton();
-                DrawCraftingUIButton();
-                DrawNameReaderUIButton();
-                DrawUnloadButton();
-                DrawDropDown();
-            }
         }
+
         #endregion Methods
     }
 }

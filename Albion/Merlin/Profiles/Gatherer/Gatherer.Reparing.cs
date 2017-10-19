@@ -17,7 +17,7 @@ namespace Merlin.Profiles.Gatherer
         public void Repair()
         {
             var player = _localPlayerCharacterView.GetLocalPlayerCharacter();
-            //Core.Log("Repairing");
+
             if (HandlePathing(ref _worldPathingRequest))
                 return;
 
@@ -32,29 +32,23 @@ namespace Merlin.Profiles.Gatherer
             Vector3 playerCenter = _localPlayerCharacterView.transform.position;
             ClusterDescriptor currentWorldCluster = _world.GetCurrentCluster();
             ClusterDescriptor townCluster = worldmapInstance.GetCluster(TownClusterNames[_selectedTownClusterIndex]).Info;
-            //Core.Log("Repairing 4");
+
             if (currentWorldCluster.GetName() == townCluster.GetName())
             {
                 var repairs = _client.GetEntities<RepairBuildingView>((x) => { return true; });
-                //Core.Log("Repairing 5");
+
                 if (repairs.Count == 0)
                 {
                     var exitPositionPoint = _world.GetCurrentCluster().GetExits().Find(e => e.GetDestination().GetName().Contains("Bank")).GetPosition();
                     var exitPosition = new Vector2(exitPositionPoint.GetX(), exitPositionPoint.GetY());
                     var targetPosition = new Vector3(exitPosition.x, 0, exitPosition.y);
-                    //Core.Log("Repairing 6");
+
                     if (_localPlayerCharacterView.TryFindPath(new ClusterPathfinder(), targetPosition, IsBlockedWithExitCheck, out List<Vector3> pathing))
                     {
                         Core.Log("[No RepairStation found - moving to bank]");
                         _repairFindPathingRequest = new PositionPathingRequest(_localPlayerCharacterView, targetPosition, pathing);
                     }
-                    else
-                    {
-                        Core.Log("Bank not found either. Moving forward more");
-                        _localPlayerCharacterView.RequestMove(playerCenter + _localPlayerCharacterView.transform.forward *5);
-                    }
 
-                    //Core.Log("Repairing 7");
                     return;
                 }
 
@@ -122,7 +116,6 @@ namespace Merlin.Profiles.Gatherer
             }
             else
             {
-                Core.Log("Heading To Town For Repairing");
                 var pathfinder = new WorldmapPathfinder();
                 if (pathfinder.TryFindPath(currentWorldCluster, townCluster, StopClusterFunction, out var path, out var pivots))
                     _worldPathingRequest = new WorldPathingRequest(currentWorldCluster, townCluster, path, _skipUnrestrictedPvPZones);

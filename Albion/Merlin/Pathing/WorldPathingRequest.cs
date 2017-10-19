@@ -32,18 +32,7 @@ namespace Merlin.Pathing
         private PositionPathingRequest _exitPathingRequest;
 
         private DateTime _timeout;
-        private DateTime _stuckTimer;
         private bool _skipUnrestrictedPvPZones;
-        private Vector3 _randomSpot;
-
-
-        //check for moving
-        private float noMovementThreshold = 0.01f;
-        private const int noMovementFrames = 2;
-        Vector3[] previousLocations = new Vector3[noMovementFrames];
-        private bool isMoving;
-
-
 
         #endregion Fields
 
@@ -67,9 +56,6 @@ namespace Merlin.Pathing
 
             _path = path;
             _timeout = DateTime.Now;
-            _stuckTimer = DateTime.MinValue;
-            _randomSpot = Vector3.zero;
-
 
             _state = new StateMachine<State, Trigger>(State.Start);
 
@@ -77,12 +63,7 @@ namespace Merlin.Pathing
                 .Permit(Trigger.ApproachDestination, State.Running);
 
             _state.Configure(State.Running)
-                .Permit(Trigger.ReachedDestination, State.Finish)
-            .Permit(Trigger.Stuck, State.Pause);
-
-            _state.Configure(State.Pause)
-               .Permit(Trigger.ReachedDestination, State.Finish)
-               .Permit(Trigger.ApproachDestination, State.Running);
+                .Permit(Trigger.ReachedDestination, State.Finish);
         }
 
         #endregion Constructors and Cleanup
@@ -91,34 +72,11 @@ namespace Merlin.Pathing
 
         public void Continue()
         {
-
-
             if (_timeout > DateTime.Now)
-            {
-               // Core.Log($"WORLD PATHING REQUEST TIMED OUT Current State {_state}");
                 return;
-            }
+
             switch (_state.State)
             {
-
-                case State.Pause:
-                    {
-                        var player = _client.GetLocalPlayerCharacterView();
-                        if (DateTime.Now > _stuckTimer)
-                        {
-                            _state.Fire(Trigger.ReachedDestination);
-                        }
-
-
-                            //Core.Log($"Moving to RandomSpot {_randomSpot}");
-                            player.RequestMove(_randomSpot);
-
-                            break;
-                        
-                        
-                    }
-
-
                 case State.Start:
                     {
                         if (_path.Count > 0)
@@ -133,43 +91,26 @@ namespace Merlin.Pathing
                     {
                         var nextCluster = _path[0];
                         var currentCluster = _world.GetCurrentCluster();
-                        var player = _client.GetLocalPlayerCharacterView();
-                        isMovingUpdate();
-                        //Core.Log($"{IsMoving}");
-                        if (!IsMoving)
-                        {
-                            Core.Log("World pathing Request not moving");
-                            _randomSpot = new Vector3(UnityEngine.Random.Range(-100f, 100f), 0, UnityEngine.Random.Range(-100f, 100f)) + player.transform.position;
-                            _stuckTimer = DateTime.Now + TimeSpan.FromSeconds(2);
-                            _state.Fire(Trigger.Stuck);
-                            break;
-                        }
 
-                       // Core.Log("Beggining run world pathing request");
                         if (currentCluster.GetIdent() != nextCluster.GetIdent())
                         {
-                            //Core.Log("Indent Not in next Cluster");
                             if (_exitPathingRequest != null)
                             {
                                 if (_exitPathingRequest.IsRunning)
                                 {
-                                   // Core.Log("Exit Pathing Request Running");
                                     _exitPathingRequest.Continue();
                                 }
                                 else
                                 {
-                                    //Core.Log("Exit Pathing Request Timed Out");
-                                    _timeout = DateTime.Now + TimeSpan.FromSeconds(10);
+                                    _timeout = DateTime.Now + TimeSpan.FromSeconds(5);
                                     _exitPathingRequest = null;
                                 }
 
                                 break;
                             }
 
-               
-                             player = _client.GetLocalPlayerCharacterView();
+                            var player = _client.GetLocalPlayerCharacterView();
                             var exits = currentCluster.GetExits();
-
 
                             var exit = exits.FirstOrDefault(e => e.GetDestination().GetIdent() == nextCluster.GetIdent());
                             var exitLocation = exit.GetPosition();
@@ -188,24 +129,16 @@ namespace Merlin.Pathing
 
                             _landscape = _client.GetLandscapeManager();
                             if (player.TryFindPath(new ClusterPathfinder(), destination, IsBlockedWithExitCheck, out List<Vector3> pathing))
-                            {
-                               // Core.Log("Beginning new position pathing request from world pathing request");
                                 _exitPathingRequest = new PositionPathingRequest(_client.GetLocalPlayerCharacterView(), destination, pathing, false);
-                            }
                         }
                         else
                         {
-                            //Core.Log("Path Point Removed");
                             _path.RemoveAt(0);
                             _exitPathingRequest = null;
                         }
 
                         if (_path.Count > 0)
                             break;
-
-
-
-
 
                         _state.Fire(Trigger.ReachedDestination);
                         break;
@@ -235,70 +168,19 @@ namespace Merlin.Pathing
                 return (((cf & 0x01) != 0) || ((cf & 0x02) != 0));
         }
 
-       
-
-        //Let other scripts see if the object is moving
-        public bool IsMoving
-        {
-            get { return isMoving; }
-        }
-
-        void Awake()
-        {
-            //For good measure, set the previous locations
-            for (int i = 0; i < previousLocations.Length; i++)
-            {
-                previousLocations[i] = Vector3.zero;
-            }
-        }
-
-        void isMovingUpdate()
-        {
-            //Store the newest vector at the end of the list of vectors
-            for (int i = 0; i < previousLocations.Length - 1; i++)
-            {
-                previousLocations[i] = previousLocations[i + 1];
-            }
-            var _player = _client.GetLocalPlayerCharacterView();
-            previousLocations[previousLocations.Length - 1] = _player.transform.position;
-
-            //Check the distances between the points in your previous locations
-            //If for the past several updates, there are no movements smaller than the threshold,
-            //you can most likely assume that the object is not moving
-            for (int i = 0; i < previousLocations.Length - 1; i++)
-            {
-                if (Vector3.Distance(previousLocations[i], previousLocations[i + 1]) >= noMovementThreshold)
-                {
-                    //The minimum movement has been detected between frames
-                    isMoving = true;
-                    break;
-                }
-                else
-                {
-                    isMoving = false;
-                    
-                }
-            }
-        }
-
-
-
         #endregion Methods
 
         private enum Trigger
         {
             ApproachDestination,
             ReachedDestination,
-            Stuck,
-            
         }
 
         private enum State
         {
             Start,
             Running,
-            Finish,
-                Pause,
+            Finish
         }
     }
 }

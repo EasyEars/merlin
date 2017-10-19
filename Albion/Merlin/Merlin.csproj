@@ -182,6 +182,7 @@
     <Compile Include="API\Direct\SpellCategory.cs" />
     <Compile Include="API\Direct\SpellDescriptor.cs" />
     <Compile Include="API\Direct\SpellEffectAreaObject.cs" />
+    <Compile Include="API\Direct\SpellsDataFile.cs" />
     <Compile Include="API\Direct\SpellSlot.cs" />
     <Compile Include="API\Direct\SpellTarget.cs" />
     <Compile Include="API\Direct\StaticObject.cs" />
@@ -225,10 +226,7 @@
     <Compile Include="API\Extensions\GameManager.cs" />
     <Compile Include="API\Extensions\LocalPlayerCharacterView.Extensions.cs" />
     <Compile Include="API\Extensions\SimulationObject.cs" />
-    <Compile Include="Helper\Tools.cs" />
-    <Compile Include="Helper\CoroutineWithData.cs" />
     <Compile Include="Helper\EnchantmentLevel.cs" />
-    <Compile Include="Helper\ProcessedResourceType.cs" />
     <Compile Include="Helper\Tier.cs" />
     <Compile Include="Helper\TownClusterName.cs" />
     <Compile Include="Pathing\AStar\AStarMap.cs" />
@@ -261,12 +259,6 @@
     <Compile Include="Pathing\World\WorldPathfinder.cs" />
     <Compile Include="Profile.cs" />
     <Compile Include="Profiles\ESP\ESP.cs" />
-    <Compile Include="Profiles\Gatherer\Building.cs" />
-    <Compile Include="Profiles\Gatherer\Class1.cs" />
-    <Compile Include="Profiles\Gatherer\Recipe.cs" />
-    <Compile Include="Profiles\Gatherer\Gather.Temp.cs" />
-    <Compile Include="Profiles\Gatherer\Gatherer.CollectItems.cs" />
-    <Compile Include="Profiles\Gatherer\Gatherer.Crafting.cs" />
     <Compile Include="Profiles\Gatherer\Gatherer.Helper.cs" />
     <Compile Include="Profiles\Gatherer\Gatherer.Reparing.cs" />
     <Compile Include="Profiles\Gatherer\Gatherer.Combat.cs" />
@@ -278,7 +270,6 @@
     <Compile Include="Profiles\Gatherer\Gatherer.SiegeCampTreasure.cs" />
     <Compile Include="Profiles\Gatherer\Gatherer.Travel.cs" />
     <Compile Include="Profiles\Gatherer\Gatherer.UI.cs" />
-    <Compile Include="Profiles\Gatherer\Resource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tuple\IStructuralComparable.cs" />
     <Compile Include="Tuple\IStructuralEquatable.cs" />
@@ -299,9 +290,10 @@
     <Content Include="Albion.PhotonClient.dll" />
     <Content Include="Assembly-CSharp.dll" />
     <Content Include="Photon3Unity3D.dll" />
+    <Content Include="System.dll" />
+    <Content Include="System.Xml.dll" />
     <Content Include="UnityEngine.dll" />
     <Content Include="UnityEngine.UI.dll" />
-    <Content Include="items.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

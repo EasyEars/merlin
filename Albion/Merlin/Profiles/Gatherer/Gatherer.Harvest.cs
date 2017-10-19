@@ -12,8 +12,6 @@ namespace Merlin.Profiles.Gatherer
 
         private ClusterPathingRequest _harvestPathingRequest;
 
-        private DateTime notMovingTimer = DateTime.MinValue;
-
         public bool ValidateHarvestable(HarvestableObjectView resource)
         {
             var resourceObject = resource.GetHarvestableObject();
@@ -106,22 +104,6 @@ namespace Merlin.Profiles.Gatherer
                 }
                 else
                 {
-                    if (DateTime.Now > notMovingTimer)
-                    {
-                        isMovingUpdate();
-                    }
-                    else
-                    {
-                        Core.Log("Harvest not moving check 1. Going to random location");
-                        _localPlayerCharacterView.RequestMove(playerCenter + new Vector3(UnityEngine.Random.Range(-100f, 100f), 0, UnityEngine.Random.Range(-100f, 100f)));
-                    }
-
-                    if (!IsMoving)
-                    {
-                        notMovingTimer = DateTime.Now + TimeSpan.FromSeconds(2);
-                    }
-
-
                     Core.Log("Path not found");
                     _state.Fire(Trigger.DepletedResource);
                 }
@@ -136,25 +118,9 @@ namespace Merlin.Profiles.Gatherer
                 _state.Fire(Trigger.DepletedResource);
                 return;
             }
+
             Core.Log("[Harvesting]");
-
             _localPlayerCharacterView.Interact(resource);
-
-            if (DateTime.Now > notMovingTimer)
-            {
-                isMovingUpdate();
-            }
-            else
-            {
-                Core.Log("Harvest not moving check 2. Going to random location");
-                _localPlayerCharacterView.RequestMove(playerCenter + new Vector3(UnityEngine.Random.Range(-100f, 100f), 0, UnityEngine.Random.Range(-100f, 100f)));
-            }
-
-            if (!IsMoving)
-            {
-                notMovingTimer = DateTime.Now + TimeSpan.FromSeconds(2);
-            }
-           
 
             var harvestableObject2 = resource.GetHarvestableObject();
 
@@ -190,9 +156,9 @@ namespace Merlin.Profiles.Gatherer
 
             float centerDistance = (targetCenter - playerCenter).magnitude;
 
-            var weaponItem = _localPlayerCharacterView.LocalPlayerCharacter.s6().o();
+            var weaponItem = _localPlayerCharacterView.LocalPlayerCharacter.s7().o();
             var isMeleeWeapon = weaponItem == null || weaponItem.bu() == Albion.Common.GameData.AttackType.Melee;
-            var attackRange = _localPlayerCharacterView.LocalPlayerCharacter.jz() + mob.Mob.w6().ew();
+            var attackRange = _localPlayerCharacterView.LocalPlayerCharacter.jz() + mob.Mob.w8().ew();
 
             var minimumAttackRange = isMeleeWeapon ? MELEE_ATTACK_RANGE : attackRange;
             var isInLoS = _localPlayerCharacterView.IsInLineOfSight(mob);

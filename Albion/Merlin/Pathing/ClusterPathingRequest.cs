@@ -1,5 +1,4 @@
 ﻿using Stateless;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,15 +14,9 @@ namespace Merlin.Pathing
         private SimulationObjectView _target;
 
         private List<Vector3> _path;
-        private List<Vector3> _completedpath;
 
         private StateMachine<State, Trigger> _state;
-        DateTime _pauseTimer;
-        //Moving fields
-        private float noMovementThreshold = .0001f;
-        private const int noMovementFrames = 2;
-        Vector3[] previousLocations = new Vector3[noMovementFrames];
-        private bool isMoving;
+
         #endregion Fields
 
         #region Properties and Events
@@ -40,22 +33,16 @@ namespace Merlin.Pathing
             _target = target;
 
             _path = path;
-            _completedpath = new List<Vector3>();
 
             _useCollider = useCollider;
-            DateTime _pauseTimer = DateTime.Now;
+
             _state = new StateMachine<State, Trigger>(State.Start);
 
             _state.Configure(State.Start)
-                      .Permit(Trigger.ApproachTarget, State.Running);
+                .Permit(Trigger.ApproachTarget, State.Running);
 
             _state.Configure(State.Running)
-                .Permit(Trigger.ReachedTarget, State.Finish)
-            .Permit(Trigger.Stuck, State.Pause);
-
-            _state.Configure(State.Pause)
-                .Permit(Trigger.ReachedTarget, State.Finish)
-                .Permit(Trigger.ApproachTarget, State.Running);
+                .Permit(Trigger.ReachedTarget, State.Finish);
         }
 
         #endregion Constructors and Cleanup
@@ -66,41 +53,6 @@ namespace Merlin.Pathing
         {
             switch (_state.State)
             {
-
-                case State.Pause:
-                    {
-                        if (DateTime.Now > _pauseTimer)
-                        {
-                            _state.Fire(Trigger.ReachedTarget);
-                        }
-                        
-
-                        if (_completedpath.Count < 2)
-                        {
-                            Core.Log("moving to random Location");
-                            Vector3 randomSpot = new Vector3(UnityEngine.Random.Range(-100f, 100f), 0, UnityEngine.Random.Range(-100f, 100f)) + _player.transform.position;
-                            _completedpath.Add(randomSpot);
-                            break;
-                        }
-                        var previousNode = _completedpath[_completedpath.Count - 1];
-                        var playerPosV2 = new Vector2(_player.transform.position.x, _player.transform.position.z);
-                        var previousNodeV2 = new Vector2(previousNode.x, previousNode.z);
-
-                        var distancePreviousToNode = (playerPosV2 - previousNodeV2).sqrMagnitude;
-                        var minimumDistance = 1f;
-
-                        if (distancePreviousToNode < minimumDistance)
-                        {
-                            Core.Log("Reached Previous Node");
-
-                        }
-                        else
-                        {
-                            _player.RequestMove(previousNode);
-                        }
-
-                        break;
-                    }
                 case State.Start:
                     {
                         if (_path.Count > 0)
@@ -119,16 +71,7 @@ namespace Merlin.Pathing
                             _state.Fire(Trigger.ReachedTarget);
                             break;
                         }
-                        isMovingUpdate();
-                        //Core.Log($"Cluster Pathing Request. Player at {_player.transform.position}. Player is move {IsMoving}");
 
-                        if (!IsMoving)
-                        {
-                            _state.Fire(Trigger.Stuck);
-                            _pauseTimer = DateTime.Now + TimeSpan.FromSeconds(0.5);
-                            Core.Log("Stuck Cluster Pathing Request");
-                            break;
-                        }
                         var currentNode = _path[0];
                         var minimumDistance = 3f;
 
@@ -146,7 +89,6 @@ namespace Merlin.Pathing
 
                         if (distanceToNode < minimumDistance)
                         {
-                            _completedpath.Add(_path[0]);
                             _path.RemoveAt(0);
                         }
                         else
@@ -163,54 +105,19 @@ namespace Merlin.Pathing
             }
         }
 
-        //check for moving
-        public bool IsMoving
-        {
-            get { return isMoving; }
-        }
-
-        void isMovingUpdate()
-        {
-
-            for (int i = 0; i < previousLocations.Length - 1; i++)
-            {
-                previousLocations[i] = previousLocations[i + 1];
-            }
-            previousLocations[previousLocations.Length - 1] = _player.transform.position;
-
-
-            for (int i = 0; i < previousLocations.Length - 1; i++)
-            {
-               // Core.Log($"Distance is {Vector3.Distance(previousLocations[i], previousLocations[i + 1])}. Threshold is {noMovementThreshold}");
-                if (Vector3.Distance(previousLocations[i], previousLocations[i + 1]) >= noMovementThreshold)
-                {
-                    isMoving = true;
-                   // Core.Log($"IsMoving true = {isMoving}");
-                    break;
-                }
-                else
-                {
-                    isMoving = false;
-                   // Core.Log($"IsMoving false =  {isMoving}");
-                    
-                }
-            }
-        }
         #endregion Methods
 
         private enum Trigger
         {
             ApproachTarget,
             ReachedTarget,
-            Stuck
         }
 
         private enum State
         {
             Start,
             Running,
-            Finish,
-            Pause
+            Finish
         }
     }
 }
